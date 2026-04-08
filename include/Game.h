@@ -3,6 +3,9 @@
 
 #include "Player.h"
 #include "Monster.h"
+#include "MonsterNormal.h"
+#include "MonsterMiniBoss.h"
+#include "MonsterBoss.h"
 #include "Bestiary.h"
 #include "Combat.h"
 #include "ACTAction.h"
@@ -10,18 +13,29 @@
 #include <map>
 #include <random>
 #include <string>
+#include <memory>
+
+// structure pour un evenement aleatoire
+struct RandomEvent {
+    string name;
+    string description;
+    string type;    // "HEAL", "DAMAGE", "ATK_BOOST", "DEF_BOOST", "ITEM_FIND"
+    int value;
+};
 
 class Game {
 private:
     Player player;
-    vector<Monster> monsterPool;
+    vector<unique_ptr<Monster>> monsterPool;
     Bestiary bestiary;
     map<string, ACTAction> actCatalog;
+    vector<RandomEvent> eventCatalog;
     mt19937 rng;
     bool gameOver;
 
-    // initialiser le catalogue d'actions ACT
+    // initialiser les catalogues
     void initActCatalog();
+    void initEventCatalog();
 
     // charger les fichiers CSV
     bool loadItems(string filename);
@@ -36,6 +50,9 @@ private:
 
     // verifier et afficher la fin
     void checkEnding();
+
+    // evenements aleatoires entre combats
+    void triggerRandomEvent();
 
     // convertir un string en categorie
     MonsterCategory parseCategory(string cat);

@@ -1,4 +1,5 @@
 #include "../include/Game.h"
+#include "../include/Colors.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -9,6 +10,7 @@ using namespace std;
 Game::Game() : rng(random_device{}()) {
     gameOver = false;
     initActCatalog();
+    initEventCatalog();
 }
 
 void Game::initActCatalog() {
@@ -46,6 +48,71 @@ void Game::initActCatalog() {
     actCatalog["THREATEN"] = a;
 }
 
+void Game::initEventCatalog() {
+    // on remplit le catalogue avec 8 evenements aleatoires
+    RandomEvent e;
+
+    e.name = "Source miraculeuse"; e.description = "Vous trouvez une source miraculeuse et recuperez des HP !"; e.type = "HEAL"; e.value = 20;
+    eventCatalog.push_back(e);
+
+    e.name = "Piege a ours"; e.description = "Vous marchez sur un piege ! Vous perdez des HP !"; e.type = "DAMAGE"; e.value = 15;
+    eventCatalog.push_back(e);
+
+    e.name = "Epee rouillee"; e.description = "Vous trouvez une epee rouillee. Votre ATK augmente temporairement !"; e.type = "ATK_BOOST"; e.value = 3;
+    eventCatalog.push_back(e);
+
+    e.name = "Bouclier fissure"; e.description = "Vous trouvez un bouclier fissure. Votre DEF augmente temporairement !"; e.type = "DEF_BOOST"; e.value = 2;
+    eventCatalog.push_back(e);
+
+    e.name = "Marchand ambulant"; e.description = "Un marchand vous offre un Snack !"; e.type = "ITEM_FIND"; e.value = 0;
+    eventCatalog.push_back(e);
+
+    e.name = "Embuscade"; e.description = "Des cailloux tombent du ciel ! Vous perdez des HP !"; e.type = "DAMAGE"; e.value = 10;
+    eventCatalog.push_back(e);
+
+    e.name = "Meditation"; e.description = "Vous meditez un instant. Vous recuperez quelques HP."; e.type = "HEAL"; e.value = 10;
+    eventCatalog.push_back(e);
+
+    e.name = "Benediction"; e.description = "Une lumiere vous enveloppe. Votre ATK augmente !"; e.type = "ATK_BOOST"; e.value = 2;
+    eventCatalog.push_back(e);
+}
+
+void Game::triggerRandomEvent() {
+    // 40% de chance de declencher un evenement
+    uniform_int_distribution<int> chanceDist(1, 100);
+    if(chanceDist(rng) > 40) return;
+
+    // tirer un evenement au hasard
+    uniform_int_distribution<int> eventDist(0, eventCatalog.size()-1);
+    RandomEvent& evt = eventCatalog[eventDist(rng)];
+
+    cout << endl;
+    cout << BOLD << MAGENTA << "*** EVENEMENT : " << evt.name << " ***" << RESET << endl;
+    cout << CYAN << evt.description << RESET << endl;
+
+    if(evt.type == "HEAL") {
+        player.heal(evt.value);
+        cout << GREEN << "HP restaures : +" << evt.value << " (HP : " << player.getHp() << "/" << player.getHpMax() << ")" << RESET << endl;
+    } else if(evt.type == "DAMAGE") {
+        player.takeDamage(evt.value);
+        cout << RED << "Degats subis : " << evt.value << " (HP : " << player.getHp() << "/" << player.getHpMax() << ")" << RESET << endl;
+        if(!player.isAlive()) {
+            cout << BOLD << RED << "Vous avez succombe a l'evenement... GAME OVER" << RESET << endl;
+            gameOver = true;
+        }
+    } else if(evt.type == "ATK_BOOST") {
+        player.setAtkBuff(player.getAtkBuff() + evt.value);
+        cout << CYAN << "ATK temporairement +" << evt.value << " !" << RESET << endl;
+    } else if(evt.type == "DEF_BOOST") {
+        player.setDefBuff(player.getDefBuff() + evt.value);
+        cout << CYAN << "DEF temporairement +" << evt.value << " !" << RESET << endl;
+    } else if(evt.type == "ITEM_FIND") {
+        Item snack("Snack", "HEAL", 8, 1);
+        player.addItem(snack);
+        cout << GREEN << "Vous obtenez un Snack !" << RESET << endl;
+    }
+}
+
 MonsterCategory Game::parseCategory(string cat) {
     if(cat == "MINIBOSS") return MINIBOSS;
     if(cat == "BOSS") return BOSS;
@@ -61,6 +128,10 @@ bool Game::loadItems(string filename) {
 
     string line;
     while(getline(file, line)) {
+        // enlever le \r si on est sur Windows
+        if(!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
         if(line.empty()) continue;
 
         stringstream ss(line);
@@ -95,6 +166,10 @@ bool Game::loadMonsters(string filename) {
 
     string line;
     while(getline(file, line)) {
+        // enlever le \r si on est sur Windows
+        if(!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
         if(line.empty()) continue;
 
         stringstream ss(line);
@@ -152,8 +227,16 @@ bool Game::loadMonsters(string filename) {
                 }
             }
 
-            Monster m(nom, hp, atk, def, cat, mercyGoal, acts);
-            monsterPool.push_back(m);
+            // factory : on cree la bonne sous-classe selon la categorie
+            unique_ptr<Monster> m;
+            if(cat == NORMAL) {
+                m = make_unique<MonsterNormal>(nom, hp, atk, def, mercyGoal, acts);
+            } else if(cat == MINIBOSS) {
+                m = make_unique<MonsterMiniBoss>(nom, hp, atk, def, mercyGoal, acts);
+            } else {
+                m = make_unique<MonsterBoss>(nom, hp, atk, def, mercyGoal, acts);
+            }
+            monsterPool.push_back(move(m));
 
         } catch(...) {
             cout << "Attention : ligne mal formee dans " << filename << " : " << line << endl;
@@ -174,16 +257,22 @@ void Game::startCombat() {
     uniform_int_distribution<int> dist(0, monsterPool.size()-1);
     int index = dist(rng);
 
-    // copier le monstre et le remettre a zero
-    Monster m = monsterPool[index];
-    m.resetForCombat();
+    // cloner le monstre et le remettre a zero (polymorphisme)
+    unique_ptr<Monster> m = monsterPool[index]->clone();
+    m->resetForCombat();
 
     // lancer le combat
-    Combat combat(player, m, actCatalog, bestiary, rng);
+    Combat combat(player, move(m), actCatalog, bestiary, rng);
     bool survived = combat.start();
+
+    // reset les buffs temporaires apres chaque combat
+    player.resetBuffs();
 
     if(!survived) {
         gameOver = true;
+    } else if(!gameOver) {
+        // evenement aleatoire apres un combat gagne
+        triggerRandomEvent();
     }
 }
 
@@ -229,9 +318,9 @@ void Game::showBestiary() {
 
 void Game::checkEnding() {
     cout << endl;
-    cout << "============================================" << endl;
-    cout << "   FELICITATIONS ! 10 victoires atteintes !" << endl;
-    cout << "============================================" << endl;
+    cout << BOLD << YELLOW << "============================================" << RESET << endl;
+    cout << BOLD << YELLOW << "   FELICITATIONS ! 10 victoires atteintes !" << RESET << endl;
+    cout << BOLD << YELLOW << "============================================" << RESET << endl;
     cout << endl;
 
     int killed = player.getMonstersKilled();
@@ -239,44 +328,44 @@ void Game::checkEnding() {
 
     if(spared == 0) {
         // fin genocidaire
-        cout << "=== FIN GENOCIDAIRE ===" << endl;
-        cout << "Vous avez tue tous les monstres sans exception." << endl;
-        cout << "Le monde tremble devant votre puissance..." << endl;
-        cout << "Mais a quel prix ?" << endl;
+        cout << BOLD << RED << "=== FIN GENOCIDAIRE ===" << RESET << endl;
+        cout << RED << "Vous avez tue tous les monstres sans exception." << RESET << endl;
+        cout << RED << "Le monde tremble devant votre puissance..." << RESET << endl;
+        cout << RED << "Mais a quel prix ?" << RESET << endl;
     } else if(killed == 0) {
         // fin pacifiste
-        cout << "=== FIN PACIFISTE ===" << endl;
-        cout << "Vous avez epargne chaque monstre que vous avez croise." << endl;
-        cout << "Le monde est en paix grace a votre compassion." << endl;
-        cout << "Les monstres vous considerent comme un ami." << endl;
+        cout << BOLD << GREEN << "=== FIN PACIFISTE ===" << RESET << endl;
+        cout << GREEN << "Vous avez epargne chaque monstre que vous avez croise." << RESET << endl;
+        cout << GREEN << "Le monde est en paix grace a votre compassion." << RESET << endl;
+        cout << GREEN << "Les monstres vous considerent comme un ami." << RESET << endl;
     } else {
         // fin neutre
-        cout << "=== FIN NEUTRE ===" << endl;
-        cout << "Vous avez tue " << killed << " monstre(s) et epargne " << spared << " monstre(s)." << endl;
-        cout << "Votre chemin fut un melange de violence et de compassion." << endl;
-        cout << "Le monde ne sait pas trop quoi penser de vous..." << endl;
+        cout << BOLD << YELLOW << "=== FIN NEUTRE ===" << RESET << endl;
+        cout << YELLOW << "Vous avez tue " << killed << " monstre(s) et epargne " << spared << " monstre(s)." << RESET << endl;
+        cout << YELLOW << "Votre chemin fut un melange de violence et de compassion." << RESET << endl;
+        cout << YELLOW << "Le monde ne sait pas trop quoi penser de vous..." << RESET << endl;
     }
 
     cout << endl;
-    cout << "Merci d'avoir joue a ALTERDUNE !" << endl;
+    cout << BOLD << CYAN << "Merci d'avoir joue a ALTERDUNE !" << RESET << endl;
 }
 
 void Game::showMenu() {
     cout << endl;
-    cout << "===== MENU PRINCIPAL =====" << endl;
-    cout << "1. Bestiaire" << endl;
-    cout << "2. Demarrer un combat" << endl;
-    cout << "3. Statistiques" << endl;
-    cout << "4. Items" << endl;
-    cout << "5. Quitter" << endl;
-    cout << "==========================" << endl;
+    cout << BOLD << BLUE << "===== MENU PRINCIPAL =====" << RESET << endl;
+    cout << CYAN << "1. Bestiaire" << RESET << endl;
+    cout << CYAN << "2. Demarrer un combat" << RESET << endl;
+    cout << CYAN << "3. Statistiques" << RESET << endl;
+    cout << CYAN << "4. Items" << RESET << endl;
+    cout << CYAN << "5. Quitter" << RESET << endl;
+    cout << BOLD << BLUE << "==========================" << RESET << endl;
     cout << "Votre choix : ";
 }
 
 void Game::run() {
-    cout << "========================================" << endl;
-    cout << "         BIENVENUE DANS ALTERDUNE       " << endl;
-    cout << "========================================" << endl;
+    cout << BOLD << CYAN << "========================================" << RESET << endl;
+    cout << BOLD << CYAN << "         BIENVENUE DANS ALTERDUNE       " << RESET << endl;
+    cout << BOLD << CYAN << "========================================" << RESET << endl;
     cout << endl;
 
     // etape 1 : saisie du nom

@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include <vector>
 #include <string>
+#include <memory>
 
 // enum pour les categories de monstres
 enum MonsterCategory { NORMAL, MINIBOSS, BOSS };
@@ -27,21 +28,24 @@ public:
     // verifier si le monstre peut etre epargne
     bool canBeSpared() const;
 
-    // nombre d'actions ACT selon la categorie
-    int getNbActs() const;
+    // nombre d'actions ACT selon la categorie (virtuel pour le polymorphisme)
+    virtual int getNbActs() const;
 
     // remettre le monstre a zero pour un nouveau combat
     void resetForCombat();
 
     // getters
     MonsterCategory getCategory() const;
-    string getCategoryStr() const;
+    virtual string getCategoryStr() const;
     int getMercy() const;
     int getMercyGoal() const;
     vector<string> getActIDs() const;
 
     // affichage (override de la methode abstraite)
     void displayInfo() const override;
+
+    // cloner le monstre (pour le polymorphisme avec unique_ptr)
+    virtual unique_ptr<Monster> clone() const;
 };
 
 #endif

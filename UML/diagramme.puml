@@ -1,0 +1,261 @@
+@startuml diagramme_uml
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+
+' ============================
+' Classe abstraite Entity
+' ============================
+abstract class Entity {
+    # name : string
+    # hp : int
+    # hpMax : int
+    # atk : int
+    # def : int
+    --
+    + Entity(name, hp, atk, def)
+    + Entity()
+    + {abstract} displayInfo() : void
+    + takeDamage(dmg : int) : void
+    + isAlive() : bool
+    + heal(amount : int) : void
+    + getName() : string
+    + getHp() : int
+    + getHpMax() : int
+    + getAtk() : int
+    + getDef() : int
+    + setName(n : string) : void
+    + setHp(h : int) : void
+}
+
+' ============================
+' Classe Player
+' ============================
+class Player {
+    - inventory : vector<Item>
+    - victories : int
+    - monstersKilled : int
+    - monstersSpared : int
+    - atkBuff : int
+    - defBuff : int
+    --
+    + Player(name : string)
+    + Player()
+    + displayInfo() : void
+    + addItem(item : Item) : void
+    + getInventory() : vector<Item>&
+    + useItem(index : int) : bool
+    + displayItems() : void
+    + addVictory() : void
+    + addKill() : void
+    + addSpare() : void
+    + getVictories() : int
+    + getMonstersKilled() : int
+    + getMonstersSpared() : int
+    + getAtkBuff() : int
+    + getDefBuff() : int
+    + setAtkBuff(val : int) : void
+    + setDefBuff(val : int) : void
+    + resetBuffs() : void
+}
+
+' ============================
+' Classe Monster (base)
+' ============================
+class Monster {
+    - category : MonsterCategory
+    - mercy : int
+    - mercyGoal : int
+    - actIDs : vector<string>
+    --
+    + Monster(name, hp, atk, def, cat, mercyGoal, acts)
+    + Monster()
+    + displayInfo() : void
+    + {abstract} getNbActs() : int
+    + {abstract} getCategoryStr() : string
+    + {abstract} clone() : unique_ptr<Monster>
+    + addMercy(amount : int) : void
+    + canBeSpared() : bool
+    + resetForCombat() : void
+    + getCategory() : MonsterCategory
+    + getMercy() : int
+    + getMercyGoal() : int
+    + getActIDs() : vector<string>
+}
+
+' ============================
+' Sous-classes de Monster
+' ============================
+class MonsterNormal {
+    + MonsterNormal(name, hp, atk, def, mercyGoal, acts)
+    + getNbActs() : int  {returns 2}
+    + getCategoryStr() : string  {returns "NORMAL"}
+    + displayInfo() : void
+    + clone() : unique_ptr<Monster>
+}
+
+class MonsterMiniBoss {
+    + MonsterMiniBoss(name, hp, atk, def, mercyGoal, acts)
+    + getNbActs() : int  {returns 3}
+    + getCategoryStr() : string  {returns "MINIBOSS"}
+    + displayInfo() : void
+    + clone() : unique_ptr<Monster>
+}
+
+class MonsterBoss {
+    + MonsterBoss(name, hp, atk, def, mercyGoal, acts)
+    + getNbActs() : int  {returns 4}
+    + getCategoryStr() : string  {returns "BOSS"}
+    + displayInfo() : void
+    + clone() : unique_ptr<Monster>
+}
+
+' ============================
+' Classe Item
+' ============================
+class Item {
+    - name : string
+    - type : string
+    - value : int
+    - quantity : int
+    --
+    + Item(name, type, value, quantity)
+    + getName() : string
+    + getType() : string
+    + getValue() : int
+    + getQuantity() : int
+    + use() : void
+    + isUsable() : bool
+    + displayItem() : void
+}
+
+' ============================
+' Structure ACTAction
+' ============================
+class ACTAction <<struct>> {
+    + id : string
+    + text : string
+    + mercyImpact : int
+}
+
+' ============================
+' Structure RandomEvent
+' ============================
+class RandomEvent <<struct>> {
+    + name : string
+    + description : string
+    + type : string
+    + value : int
+}
+
+' ============================
+' Classe Bestiary
+' ============================
+class Bestiary {
+    - entries : vector<BestiaryEntry>
+    --
+    + addEntry(m : Monster&, outcome : string) : void
+    + display() : void
+    + getSize() : int
+}
+
+class BestiaryEntry <<struct>> {
+    + name : string
+    + category : string
+    + hpMax : int
+    + atk : int
+    + def : int
+    + outcome : string
+}
+
+' ============================
+' Classe Combat
+' ============================
+class Combat {
+    - player : Player&
+    - monster : unique_ptr<Monster>
+    - actCatalog : map<string, ACTAction>&
+    - bestiary : Bestiary&
+    - rng : mt19937&
+    --
+    + Combat(p, m, catalog, best, rng)
+    + start() : bool
+    - displayCombatStatus() : void
+    - doFight() : void
+    - doAct() : void
+    - doItem() : bool
+    - doMercy() : bool
+    - monsterTurn() : void
+    - rollDamage(hpMax, atkAtk, defDef) : int
+}
+
+' ============================
+' Classe Game
+' ============================
+class Game {
+    - player : Player
+    - monsterPool : vector<unique_ptr<Monster>>
+    - bestiary : Bestiary
+    - actCatalog : map<string, ACTAction>
+    - eventCatalog : vector<RandomEvent>
+    - rng : mt19937
+    - gameOver : bool
+    --
+    + Game()
+    + run() : void
+    - initActCatalog() : void
+    - initEventCatalog() : void
+    - loadItems(filename : string) : bool
+    - loadMonsters(filename : string) : bool
+    - showMenu() : void
+    - startCombat() : void
+    - showStats() : void
+    - showItems() : void
+    - showBestiary() : void
+    - checkEnding() : void
+    - triggerRandomEvent() : void
+    - parseCategory(cat : string) : MonsterCategory
+}
+
+' ============================
+' Enum MonsterCategory
+' ============================
+enum MonsterCategory {
+    NORMAL
+    MINIBOSS
+    BOSS
+}
+
+' ============================
+' Relations
+' ============================
+
+' Heritage
+Entity <|-- Player
+Entity <|-- Monster
+Monster <|-- MonsterNormal
+Monster <|-- MonsterMiniBoss
+Monster <|-- MonsterBoss
+
+' Composition
+Player *-- "0..*" Item : inventory
+Bestiary *-- "0..*" BestiaryEntry : entries
+Game *-- "1" Player : player
+Game *-- "1" Bestiary : bestiary
+Game *-- "0..*" ACTAction : actCatalog
+Game *-- "0..*" RandomEvent : eventCatalog
+
+' Agregation (Game possede des unique_ptr<Monster>)
+Game o-- "0..*" Monster : monsterPool
+
+' Dependances
+Combat ..> Player : utilise
+Combat ..> Monster : utilise
+Combat ..> Bestiary : utilise
+Combat ..> ACTAction : utilise
+Game ..> Combat : cree
+
+' Lien enum
+Monster --> MonsterCategory : category
+
+@enduml

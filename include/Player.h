@@ -11,6 +11,8 @@ private:
     int victories;
     int monstersKilled;
     int monstersSpared;
+    int atkBuff;    // buff temporaire d'attaque (reset apres chaque combat)
+    int defBuff;    // buff temporaire de defense (reset apres chaque combat)
 
 public:
     // constructeur avec nom
@@ -34,6 +36,13 @@ public:
     int getVictories() const;
     int getMonstersKilled() const;
     int getMonstersSpared() const;
+
+    // buffs temporaires
+    int getAtkBuff() const;
+    int getDefBuff() const;
+    void setAtkBuff(int val);
+    void setDefBuff(int val);
+    void resetBuffs();
 
     // affichage
     void displayInfo() const override;

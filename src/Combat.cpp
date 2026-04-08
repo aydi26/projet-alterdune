@@ -1,54 +1,63 @@
 #include "../include/Combat.h"
+#include "../include/Colors.h"
 #include <limits>
 
 using namespace std;
 
-Combat::Combat(Player& p, Monster m, map<string, ACTAction>& catalog, Bestiary& best, mt19937& rng)
-    : player(p), monster(m), actCatalog(catalog), bestiary(best), rng(rng) {
+Combat::Combat(Player& p, unique_ptr<Monster> m, map<string, ACTAction>& catalog, Bestiary& best, mt19937& rng)
+    : player(p), monster(move(m)), actCatalog(catalog), bestiary(best), rng(rng) {
 }
 
-int Combat::rollDamage(int hpMax) {
+int Combat::rollDamage(int hpMax, int attackerAtk, int defenderDef) {
     uniform_int_distribution<int> dist(0, hpMax);
-    return dist(rng);
+    int baseDamage = dist(rng);
+    if(baseDamage == 0) return 0; // coup rate
+    int finalDamage = baseDamage + attackerAtk - defenderDef;
+    if(finalDamage < 1) finalDamage = 1; // minimum 1 degat si pas rate
+    return finalDamage;
 }
 
 void Combat::displayCombatStatus() {
     cout << endl;
-    cout << "--- Etat du combat ---" << endl;
-    cout << player.getName() << " : HP " << player.getHp() << "/" << player.getHpMax() << endl;
-    cout << monster.getName() << " : HP " << monster.getHp() << "/" << monster.getHpMax();
-    cout << " | Mercy : " << monster.getMercy() << "/" << monster.getMercyGoal() << endl;
-    cout << "----------------------" << endl;
+    cout << BOLD << "--- Etat du combat ---" << RESET << endl;
+    cout << GREEN << player.getName() << " : HP " << player.getHp() << "/" << player.getHpMax() << RESET << endl;
+    cout << RED << monster->getName() << " : HP " << monster->getHp() << "/" << monster->getHpMax() << RESET;
+    cout << " | " << YELLOW << "Mercy : " << monster->getMercy() << "/" << monster->getMercyGoal() << RESET << endl;
+    cout << BOLD << "----------------------" << RESET << endl;
 }
 
 void Combat::doFight() {
-    int degats = rollDamage(monster.getHpMax());
+    int degats = rollDamage(monster->getHpMax(), player.getAtk() + player.getAtkBuff(), monster->getDef());
 
     if(degats == 0) {
-        cout << "Vous attaquez " << monster.getName() << " mais vous ratez votre coup !" << endl;
+        cout << GRAY << "Vous attaquez " << monster->getName() << " mais vous ratez votre coup !" << RESET << endl;
     } else {
-        cout << "Vous attaquez " << monster.getName() << " et infligez " << degats << " degats !" << endl;
-        monster.takeDamage(degats);
-        if(!monster.isAlive()) {
-            cout << monster.getName() << " est vaincu !" << endl;
+        cout << RED << "Vous attaquez " << monster->getName() << " et infligez " << degats << " degats !" << RESET << endl;
+        monster->takeDamage(degats);
+        if(!monster->isAlive()) {
+            cout << BOLD << RED << monster->getName() << " est vaincu !" << RESET << endl;
         }
     }
 }
 
 void Combat::doAct() {
-    vector<string> acts = monster.getActIDs();
-    int nbActs = monster.getNbActs();
+    vector<string> acts = monster->getActIDs();
+    int nbActs = monster->getNbActs();
+
+    // on prend le min entre nbActs et la taille reelle du vecteur
+    int nbDisponibles = nbActs;
+    if(nbDisponibles > (int)acts.size()) nbDisponibles = (int)acts.size();
 
     // afficher les actions disponibles
-    cout << "Actions disponibles :" << endl;
-    for(int i=0; i < nbActs && i < (int)acts.size(); i++) {
-        cout << i+1 << ". " << acts[i] << endl;
+    cout << CYAN << "Actions disponibles :" << RESET << endl;
+    for(int i=0; i < nbDisponibles; i++) {
+        cout << CYAN << i+1 << ". " << acts[i] << RESET << endl;
     }
 
     // choix du joueur
     int choix;
     cout << "Choisissez une action : ";
-    while(!(cin >> choix) || choix < 1 || choix > nbActs) {
+    while(!(cin >> choix) || choix < 1 || choix > nbDisponibles) {
         cin.clear();
         cin.ignore(10000, '\n');
         cout << "Choix invalide, reessayez : ";
@@ -59,13 +68,13 @@ void Combat::doAct() {
     // chercher l'action dans le catalogue
     if(actCatalog.find(actID) != actCatalog.end()) {
         ACTAction& action = actCatalog[actID];
-        cout << endl << action.text << endl;
-        monster.addMercy(action.mercyImpact);
+        cout << endl << CYAN << action.text << RESET << endl;
+        monster->addMercy(action.mercyImpact);
 
         if(action.mercyImpact > 0) {
-            cout << "(Mercy +" << action.mercyImpact << ")" << endl;
+            cout << YELLOW << "(Mercy +" << action.mercyImpact << ")" << RESET << endl;
         } else if(action.mercyImpact < 0) {
-            cout << "(Mercy " << action.mercyImpact << ")" << endl;
+            cout << RED << "(Mercy " << action.mercyImpact << ")" << RESET << endl;
         }
     } else {
         cout << "Action inconnue..." << endl;
@@ -82,7 +91,7 @@ bool Combat::doItem() {
     }
 
     if(!hasUsable) {
-        cout << "Vous n'avez aucun item utilisable !" << endl;
+        cout << YELLOW << "Vous n'avez aucun item utilisable !" << RESET << endl;
         return false;
     }
 
@@ -103,44 +112,44 @@ bool Combat::doItem() {
 }
 
 bool Combat::doMercy() {
-    if(monster.canBeSpared()) {
-        cout << "Vous epargnez " << monster.getName() << " !" << endl;
-        cout << monster.getName() << " s'en va paisiblement..." << endl;
+    if(monster->canBeSpared()) {
+        cout << BOLD << GREEN << "Vous epargnez " << monster->getName() << " !" << RESET << endl;
+        cout << GREEN << monster->getName() << " s'en va paisiblement..." << RESET << endl;
         return true;
     } else {
-        cout << "La jauge Mercy n'est pas assez haute ! (" << monster.getMercy() << "/" << monster.getMercyGoal() << ")" << endl;
+        cout << YELLOW << "La jauge Mercy n'est pas assez haute ! (" << monster->getMercy() << "/" << monster->getMercyGoal() << ")" << RESET << endl;
         return false;
     }
 }
 
 void Combat::monsterTurn() {
-    int degats = rollDamage(player.getHpMax());
+    int degats = rollDamage(player.getHpMax(), monster->getAtk(), player.getDef() + player.getDefBuff());
 
     if(degats == 0) {
-        cout << monster.getName() << " vous attaque mais rate son coup !" << endl;
+        cout << GRAY << monster->getName() << " vous attaque mais rate son coup !" << RESET << endl;
     } else {
-        cout << monster.getName() << " vous attaque et inflige " << degats << " degats !" << endl;
+        cout << RED << monster->getName() << " vous attaque et inflige " << degats << " degats !" << RESET << endl;
         player.takeDamage(degats);
     }
 }
 
 bool Combat::start() {
     cout << endl;
-    cout << "==============================" << endl;
-    cout << "Un " << monster.getName() << " (" << monster.getCategoryStr() << ") apparait !" << endl;
-    cout << "==============================" << endl;
+    cout << BOLD << MAGENTA << "==============================" << RESET << endl;
+    cout << BOLD << MAGENTA << "Un " << monster->getName() << " (" << monster->getCategoryStr() << ") apparait !" << RESET << endl;
+    cout << BOLD << MAGENTA << "==============================" << RESET << endl;
 
     bool spared = false;
 
-    while(monster.isAlive() && player.isAlive() && !spared) {
+    while(monster->isAlive() && player.isAlive() && !spared) {
         displayCombatStatus();
 
         // menu de combat
         cout << endl;
-        cout << "1. FIGHT" << endl;
-        cout << "2. ACT" << endl;
-        cout << "3. ITEM" << endl;
-        cout << "4. MERCY" << endl;
+        cout << RED << "1. FIGHT" << RESET << endl;
+        cout << CYAN << "2. ACT" << RESET << endl;
+        cout << GREEN << "3. ITEM" << RESET << endl;
+        cout << YELLOW << "4. MERCY" << RESET << endl;
         cout << "Que voulez-vous faire ? ";
 
         int choix;
@@ -174,12 +183,12 @@ bool Combat::start() {
         }
 
         // si le monstre est mort, on arrete
-        if(!monster.isAlive()) {
+        if(!monster->isAlive()) {
             player.addVictory();
             player.addKill();
-            bestiary.addEntry(monster, "Tue");
-            cout << endl << "Vous avez tue " << monster.getName() << " !" << endl;
-            cout << "Victoires : " << player.getVictories() << "/10" << endl;
+            bestiary.addEntry(*monster, "Tue");
+            cout << endl << BOLD << RED << "Vous avez tue " << monster->getName() << " !" << RESET << endl;
+            cout << YELLOW << "Victoires : " << player.getVictories() << "/10" << RESET << endl;
             return true;
         }
 
@@ -187,9 +196,9 @@ bool Combat::start() {
         if(spared) {
             player.addVictory();
             player.addSpare();
-            bestiary.addEntry(monster, "Epargne");
-            cout << endl << "Vous avez epargne " << monster.getName() << " !" << endl;
-            cout << "Victoires : " << player.getVictories() << "/10" << endl;
+            bestiary.addEntry(*monster, "Epargne");
+            cout << endl << BOLD << GREEN << "Vous avez epargne " << monster->getName() << " !" << RESET << endl;
+            cout << YELLOW << "Victoires : " << player.getVictories() << "/10" << RESET << endl;
             return true;
         }
 
@@ -200,8 +209,8 @@ bool Combat::start() {
 
             // verifier si le joueur est mort
             if(!player.isAlive()) {
-                cout << endl << "Vous avez ete vaincu par " << monster.getName() << "..." << endl;
-                cout << "GAME OVER" << endl;
+                cout << endl << BOLD << RED << "Vous avez ete vaincu par " << monster->getName() << "..." << RESET << endl;
+                cout << BOLD << RED << "GAME OVER" << RESET << endl;
                 return false;
             }
         }

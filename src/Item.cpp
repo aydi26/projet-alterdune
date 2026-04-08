@@ -1,4 +1,5 @@
 #include "../include/Item.h"
+#include "../include/Colors.h"
 
 using namespace std;
 
@@ -38,7 +39,11 @@ bool Item::isUsable() const {
 void Item::displayItem() const {
     cout << name << " (" << type << ") - ";
     if(type == "HEAL") {
-        cout << "Soigne " << value << " HP";
+        cout << GREEN << "Soigne " << value << " HP" << RESET;
+    } else if(type == "ATK_BUFF") {
+        cout << RED << "Augmente ATK de " << value << RESET;
+    } else if(type == "DEF_BUFF") {
+        cout << BLUE << "Augmente DEF de " << value << RESET;
     }
     cout << " - Quantite: " << quantity << endl;
 }

@@ -7,11 +7,12 @@
 #include "ACTAction.h"
 #include <map>
 #include <random>
+#include <memory>
 
 class Combat {
 private:
     Player& player;
-    Monster monster;    // copie du monstre (on modifie ses HP/mercy pendant le combat)
+    unique_ptr<Monster> monster;    // monstre polymorphe (on modifie ses HP/mercy pendant le combat)
     map<string, ACTAction>& actCatalog;
     Bestiary& bestiary;
     mt19937& rng;
@@ -23,10 +24,10 @@ private:
     bool doItem();
     bool doMercy();
     void monsterTurn();
-    int rollDamage(int hpMax);
+    int rollDamage(int hpMax, int attackerAtk, int defenderDef);
 
 public:
-    Combat(Player& p, Monster m, map<string, ACTAction>& catalog, Bestiary& best, mt19937& rng);
+    Combat(Player& p, unique_ptr<Monster> m, map<string, ACTAction>& catalog, Bestiary& best, mt19937& rng);
 
     // lance le combat, retourne true si le joueur survit
     bool start();

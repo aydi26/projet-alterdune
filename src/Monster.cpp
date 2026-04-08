@@ -1,4 +1,5 @@
 #include "../include/Monster.h"
+#include <memory>
 
 using namespace std;
 
@@ -58,6 +59,10 @@ string Monster::getCategoryStr() const {
 int Monster::getMercy() const { return mercy; }
 int Monster::getMercyGoal() const { return mercyGoal; }
 vector<string> Monster::getActIDs() const { return actIDs; }
+
+unique_ptr<Monster> Monster::clone() const {
+    return make_unique<Monster>(*this);
+}
 
 void Monster::displayInfo() const {
     cout << "=== " << name << " ===" << endl;
