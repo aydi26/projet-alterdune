@@ -3,6 +3,8 @@
 
 using namespace std;
 
+// statistiques de départ : 100 hp / 10 atk / 5 def
+// valeurs calibrées pour rester équilibrées face au pool de monstres défini dans le csv
 Player::Player(string name) : Entity(name, 100, 10, 5) {
     victories = 0;
     monstersKilled = 0;
@@ -28,30 +30,32 @@ vector<Item>& Player::getInventory() {
 }
 
 bool Player::useItem(int index) {
-    // on verifie que l'index est valide
+    // validation de l'index pour éviter tout accès hors limites
     if(index < 0 || index >= (int)inventory.size()) {
-        cout << "Index invalide !" << endl;
+        cout << "index invalide !" << endl;
         return false;
     }
 
     Item& item = inventory[index];
 
+    // l'item peut exister dans l'inventaire mais avoir une quantité nulle s'il a déjà été consommé
     if(!item.isUsable()) {
-        cout << "Cet item n'est plus disponible !" << endl;
+        cout << "cet item n'est plus disponible !" << endl;
         return false;
     }
 
-    // on applique l'effet selon le type
+    // application de l'effet selon le type
+    // chaîne de if/else if préférée à un dispatch polymorphe pour rester simple sur 3 types seulement
     if(item.getType() == "HEAL") {
         heal(item.getValue());
-        cout << GREEN << "Vous utilisez " << item.getName() << " et recuperez " << item.getValue() << " HP !" << RESET << endl;
-        cout << GREEN << "HP : " << hp << "/" << hpMax << RESET << endl;
+        cout << GREEN << "tu utilises " << item.getName() << " et tu recuperes " << item.getValue() << " hp !" << RESET << endl;
+        cout << GREEN << "hp : " << hp << "/" << hpMax << RESET << endl;
     } else if(item.getType() == "ATK_BUFF") {
         atkBuff += item.getValue();
-        cout << RED << "Vous utilisez " << item.getName() << " ! ATK +" << item.getValue() << " pour ce combat !" << RESET << endl;
+        cout << RED << "tu utilises " << item.getName() << " ! atk +" << item.getValue() << " pour ce combat" << RESET << endl;
     } else if(item.getType() == "DEF_BUFF") {
         defBuff += item.getValue();
-        cout << BLUE << "Vous utilisez " << item.getName() << " ! DEF +" << item.getValue() << " pour ce combat !" << RESET << endl;
+        cout << BLUE << "tu utilises " << item.getName() << " ! def +" << item.getValue() << " pour ce combat" << RESET << endl;
     }
 
     item.use();
@@ -74,22 +78,22 @@ void Player::resetBuffs() { atkBuff = 0; defBuff = 0; }
 
 void Player::displayInfo() const {
     cout << BOLD << "=== " << name << " ===" << RESET << endl;
-    cout << GREEN << "HP : " << hp << "/" << hpMax << RESET << endl;
-    cout << CYAN << "ATK : " << atk << " | DEF : " << def << RESET << endl;
+    cout << GREEN << "hp : " << hp << "/" << hpMax << RESET << endl;
+    cout << CYAN << "atk : " << atk << " | def : " << def << RESET << endl;
     if(atkBuff > 0 || defBuff > 0) {
-        cout << CYAN << "Buffs actifs : ATK +" << atkBuff << " | DEF +" << defBuff << RESET << endl;
+        cout << CYAN << "buffs actifs : atk +" << atkBuff << " | def +" << defBuff << RESET << endl;
     }
-    cout << RED << "Monstres tues : " << monstersKilled << RESET << endl;
-    cout << GREEN << "Monstres epargnes : " << monstersSpared << RESET << endl;
-    cout << YELLOW << "Victoires : " << victories << "/10" << RESET << endl;
+    cout << RED << "monstres tues : " << monstersKilled << RESET << endl;
+    cout << GREEN << "monstres epargnes : " << monstersSpared << RESET << endl;
+    cout << YELLOW << "victoires : " << victories << "/10" << RESET << endl;
 }
 
 void Player::displayItems() const {
     if(inventory.empty()) {
-        cout << "Inventaire vide." << endl;
+        cout << "inventaire vide." << endl;
         return;
     }
-    cout << BOLD << "=== Inventaire ===" << RESET << endl;
+    cout << BOLD << "=== inventaire ===" << RESET << endl;
     for(int i=0; i < (int)inventory.size(); i++) {
         cout << i+1 << ". ";
         inventory[i].displayItem();

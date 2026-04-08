@@ -3,6 +3,8 @@
 
 using namespace std;
 
+// on copie les informations du monstre dans une struct dédiée
+// le passage par valeur évite tout pointeur pendant si le monstre est détruit par la suite
 void Bestiary::addEntry(Monster& m, string outcome) {
     BestiaryEntry entry;
     entry.name = m.getName();
@@ -16,19 +18,20 @@ void Bestiary::addEntry(Monster& m, string outcome) {
 
 void Bestiary::display() const {
     if(entries.empty()) {
-        cout << YELLOW << "Aucun monstre vaincu pour le moment." << RESET << endl;
+        cout << YELLOW << "aucun monstre vaincu pour le moment." << RESET << endl;
         return;
     }
 
-    cout << BOLD << BLUE << "========== BESTIAIRE ==========" << RESET << endl;
+    cout << BOLD << BLUE << "========== bestiaire ==========" << RESET << endl;
     for(int i=0; i < (int)entries.size(); i++) {
         cout << BOLD << "--- " << entries[i].name << " ---" << RESET << endl;
-        cout << "Categorie : " << entries[i].category << endl;
-        cout << "HP max : " << entries[i].hpMax << " | ATK : " << entries[i].atk << " | DEF : " << entries[i].def << endl;
+        cout << "categorie : " << entries[i].category << endl;
+        cout << "hp max : " << entries[i].hpMax << " | atk : " << entries[i].atk << " | def : " << entries[i].def << endl;
+        // résultat coloré selon l'issue : rouge pour un monstre tué, vert pour un monstre épargné
         if(entries[i].outcome == "Tue") {
-            cout << "Resultat : " << RED << entries[i].outcome << RESET << endl;
+            cout << "resultat : " << RED << entries[i].outcome << RESET << endl;
         } else {
-            cout << "Resultat : " << GREEN << entries[i].outcome << RESET << endl;
+            cout << "resultat : " << GREEN << entries[i].outcome << RESET << endl;
         }
         cout << endl;
     }

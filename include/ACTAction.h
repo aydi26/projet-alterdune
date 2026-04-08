@@ -5,11 +5,12 @@
 
 using namespace std;
 
-// structure simple pour stocker une action ACT
+// structure POD décrivant une action ACT
+// id pour la lookup dans la map du catalogue, texte affiché en jeu, et impact sur la jauge mercy
 struct ACTAction {
-    string id;          // identifiant unique (ex: JOKE, COMPLIMENT)
-    string text;        // texte affiche quand on fait l'action
-    int mercyImpact;    // impact sur la jauge mercy (positif ou negatif)
+    string id;
+    string text;
+    int mercyImpact;    // peut être négatif pour les actions hostiles (ex: INSULT, THREATEN)
 };
 
 #endif

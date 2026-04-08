@@ -6,16 +6,17 @@
 
 using namespace std;
 
+// représente un item de l'inventaire joueur
+// types supportés : "HEAL", "ATK_BUFF", "DEF_BUFF"
 class Item {
 private:
     string name;
     string type;
-    int value;
-    int quantity;
+    int value;     // valeur de l'effet (montant de soin ou de buff)
+    int quantity;  // si == 0, l'item est consommé et ne peut plus être utilisé
 
 public:
-    // constructeur
-    Item(string name, string type, int value, int quantity);
+    Item(string name, string type, int value,int quantity);
 
     // getters
     string getName() const;
@@ -23,13 +24,13 @@ public:
     int getValue() const;
     int getQuantity() const;
 
-    // utiliser l'item (decremente la quantite)
+    // décrémente la quantité d'une unité (consomme l'item)
     void use();
 
-    // verifier si on peut encore l'utiliser
+    // true tant qu'il reste au moins une unité
     bool isUsable() const;
 
-    // afficher les infos de l'item
+    // affichage formaté avec couleur en fonction du type
     void displayItem() const;
 };
 

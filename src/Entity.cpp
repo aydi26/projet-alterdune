@@ -2,14 +2,15 @@
 
 using namespace std;
 
-Entity::Entity(string name, int hp, int atk, int def) {
+Entity::Entity(string name, int hp,int atk, int def) {
     this->name = name;
     this->hp = hp;
-    this->hpMax = hp;
+    this->hpMax = hp;       // à l'initialisation, hp courant et hp max sont identiques
     this->atk = atk;
     this->def = def;
 }
 
+// constructeur par défaut, valeurs neutres ; utilisé pour la déclaration différée d'un Player
 Entity::Entity() {
     name = "";
     hp = 0;
@@ -20,7 +21,7 @@ Entity::Entity() {
 
 void Entity::takeDamage(int dmg) {
     hp -= dmg;
-    if(hp < 0) hp = 0;
+    if(hp < 0) hp = 0;      // on borne à 0 pour éviter des hp négatifs à l'affichage
 }
 
 bool Entity::isAlive() const {
@@ -29,16 +30,16 @@ bool Entity::isAlive() const {
 
 void Entity::heal(int amount) {
     hp += amount;
-    if(hp > hpMax) hp = hpMax;
+    if(hp > hpMax) hp = hpMax;  // empêche le dépassement du maximum
 }
 
-// getters
+// --- getters ---
 string Entity::getName() const { return name; }
 int Entity::getHp() const { return hp; }
 int Entity::getHpMax() const { return hpMax; }
 int Entity::getAtk() const { return atk; }
 int Entity::getDef() const { return def; }
 
-// setters
+// --- setters ---
 void Entity::setName(string n) { name = n; }
 void Entity::setHp(int h) { hp = h; }

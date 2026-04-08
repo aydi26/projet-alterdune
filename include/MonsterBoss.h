@@ -4,12 +4,11 @@
 #include "Monster.h"
 #include <memory>
 
+// monstre de catégorie boss, dispose de 4 actions ACT et de stats généralement plus élevées
 class MonsterBoss : public Monster {
 public:
-    // constructeur
-    MonsterBoss(string name, int hp, int atk, int def, int mercyGoal, vector<string> acts);
+    MonsterBoss(string name,int hp, int atk,int def, int mercyGoal, vector<string> acts);
 
-    // overrides pour le polymorphisme
     int getNbActs() const override;
     string getCategoryStr() const override;
     void displayInfo() const override;

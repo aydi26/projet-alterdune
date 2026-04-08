@@ -5,7 +5,8 @@
 
 using namespace std;
 
-// codes ANSI pour les couleurs en console
+// codes d'échappement ANSI pour la coloration du terminal
+// le rendu peut être incomplet sur certains terminaux Windows non compatibles ANSI
 const string RESET   = "\033[0m";
 const string RED     = "\033[31m";
 const string GREEN   = "\033[32m";

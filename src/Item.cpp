@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Item::Item(string name, string type, int value, int quantity) {
+Item::Item(string name, string type,int value, int quantity) {
     this->name = name;
     this->type = type;
     this->value = value;
@@ -26,6 +26,7 @@ int Item::getQuantity() const {
     return quantity;
 }
 
+// décrémente la quantité, avec une garde pour éviter de descendre sous 0
 void Item::use() {
     if(quantity > 0) {
         quantity--;
@@ -38,12 +39,13 @@ bool Item::isUsable() const {
 
 void Item::displayItem() const {
     cout << name << " (" << type << ") - ";
+    // coloration en fonction du type pour améliorer la lisibilité de l'inventaire
     if(type == "HEAL") {
-        cout << GREEN << "Soigne " << value << " HP" << RESET;
+        cout << GREEN << "soigne " << value << " hp" << RESET;
     } else if(type == "ATK_BUFF") {
-        cout << RED << "Augmente ATK de " << value << RESET;
+        cout << RED << "augmente atk de " << value << RESET;
     } else if(type == "DEF_BUFF") {
-        cout << BLUE << "Augmente DEF de " << value << RESET;
+        cout << BLUE << "augmente def de " << value << RESET;
     }
-    cout << " - Quantite: " << quantity << endl;
+    cout << " - quantite: " << quantity << endl;
 }

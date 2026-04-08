@@ -4,12 +4,12 @@
 #include "Monster.h"
 #include <memory>
 
+// monstre standard, dispose de 2 actions ACT
 class MonsterNormal : public Monster {
 public:
-    // constructeur
-    MonsterNormal(string name, int hp, int atk, int def, int mercyGoal, vector<string> acts);
+    MonsterNormal(string name,int hp,int atk, int def, int mercyGoal, vector<string> acts);
 
-    // overrides pour le polymorphisme
+    // overrides nécessaires pour le polymorphisme
     int getNbActs() const override;
     string getCategoryStr() const override;
     void displayInfo() const override;

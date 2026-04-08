@@ -5,39 +5,41 @@
 #include "Item.h"
 #include <vector>
 
+// classe joueur, hérite d'Entity
+// possède un inventaire et des compteurs servant à déterminer la fin du jeu
 class Player : public Entity {
 private:
     vector<Item> inventory;
     int victories;
     int monstersKilled;
     int monstersSpared;
-    int atkBuff;    // buff temporaire d'attaque (reset apres chaque combat)
-    int defBuff;    // buff temporaire de defense (reset apres chaque combat)
+
+    // buffs temporaires, réinitialisés après chaque combat
+    // permet d'éviter une accumulation déséquilibrée via les events aléatoires
+    int atkBuff;
+    int defBuff;
 
 public:
-    // constructeur avec nom
     Player(string name);
-    // constructeur par defaut
-    Player();
+    Player();   // constructeur par défaut, requis pour le membre Game::player
 
     // gestion de l'inventaire
     void addItem(Item item);
     vector<Item>& getInventory();
 
-    // utiliser un item par son index dans l'inventaire
+    // utilise l'item situé à l'index donné, retourne false si aucune action n'a été effectuée
     bool useItem(int index);
 
-    // compteurs
+    // compteurs utilisés pour le scoring de fin de partie
     void addVictory();
     void addKill();
     void addSpare();
 
-    // getters
     int getVictories() const;
     int getMonstersKilled() const;
     int getMonstersSpared() const;
 
-    // buffs temporaires
+    // gestion des buffs temporaires
     int getAtkBuff() const;
     int getDefBuff() const;
     void setAtkBuff(int val);

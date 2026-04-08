@@ -5,14 +5,15 @@
 #include <vector>
 #include <string>
 
-// structure pour stocker les infos d'un monstre vaincu
+// entrée du bestiaire pour les monstres déjà rencontrés
+// on stocke les valeurs par copie pour s'affranchir des problèmes de durée de vie
 struct BestiaryEntry {
     string name;
     string category;
     int hpMax;
     int atk;
     int def;
-    string outcome; // "Tue" ou "Epargne"
+    string outcome;     // "Tue" ou "Epargne"
 };
 
 class Bestiary {
@@ -20,13 +21,11 @@ private:
     vector<BestiaryEntry> entries;
 
 public:
-    // ajouter un monstre vaincu
+    // ajoute une entrée à la fin de chaque combat, appelé depuis Combat
     void addEntry(Monster& m, string outcome);
 
-    // afficher le bestiaire
     void display() const;
 
-    // nombre d'entrees
     int getSize() const;
 };
 

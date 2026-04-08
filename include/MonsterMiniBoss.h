@@ -4,12 +4,11 @@
 #include "Monster.h"
 #include <memory>
 
+// monstre intermédiaire, dispose de 3 actions ACT
 class MonsterMiniBoss : public Monster {
 public:
-    // constructeur
-    MonsterMiniBoss(string name, int hp, int atk, int def, int mercyGoal, vector<string> acts);
+    MonsterMiniBoss(string name, int hp,int atk,int def,int mercyGoal,vector<string> acts);
 
-    // overrides pour le polymorphisme
     int getNbActs() const override;
     string getCategoryStr() const override;
     void displayInfo() const override;
