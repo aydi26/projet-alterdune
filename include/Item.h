@@ -32,6 +32,9 @@ public:
 
     // affichage formaté avec couleur en fonction du type
     void displayItem() const;
+
+    // retourne la chaine formatee (sans endl) pour integration dans un cadre
+    string formatItem() const;
 };
 
 #endif

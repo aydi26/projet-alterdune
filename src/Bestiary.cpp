@@ -1,5 +1,7 @@
 #include "../include/Bestiary.h"
 #include "../include/Colors.h"
+#include "../include/Display.h"
+#include <sstream>
 
 using namespace std;
 
@@ -22,20 +24,23 @@ void Bestiary::display() const {
         return;
     }
 
-    cout << BOLD << BLUE << "========== bestiaire ==========" << RESET << endl;
+    Display::drawTitleBox("bestiaire", 52, BLUE);
     for(int i=0; i < (int)entries.size(); i++) {
-        cout << BOLD << "--- " << entries[i].name << " ---" << RESET << endl;
-        cout << "categorie : " << entries[i].category << endl;
-        cout << "hp max : " << entries[i].hpMax << " | atk : " << entries[i].atk << " | def : " << entries[i].def << endl;
-        // résultat coloré selon l'issue : rouge pour un monstre tué, vert pour un monstre épargné
-        if(entries[i].outcome == "Tue") {
-            cout << "resultat : " << RED << entries[i].outcome << RESET << endl;
-        } else {
-            cout << "resultat : " << GREEN << entries[i].outcome << RESET << endl;
+        if(i > 0) {
+            Display::drawThinSeparator(52, BLUE);
         }
-        cout << endl;
+        Display::drawLeftLine(BOLD + entries[i].name + RESET, 52, BLUE);
+        Display::drawLeftLine("categorie : " + entries[i].category, 52, BLUE);
+        ostringstream statsLine;
+        statsLine << "hp: " << entries[i].hpMax << " | atk: " << entries[i].atk << " | def: " << entries[i].def;
+        Display::drawLeftLine(statsLine.str(), 52, BLUE);
+        if(entries[i].outcome == "Tue") {
+            Display::drawLeftLine("resultat : " + RED + entries[i].outcome + RESET, 52, BLUE);
+        } else {
+            Display::drawLeftLine("resultat : " + GREEN + entries[i].outcome + RESET, 52, BLUE);
+        }
     }
-    cout << BOLD << BLUE << "===============================" << RESET << endl;
+    Display::drawBottomBorder(52, BLUE);
 }
 
 int Bestiary::getSize() const {

@@ -1,5 +1,7 @@
 #include "../include/Player.h"
 #include "../include/Colors.h"
+#include "../include/Display.h"
+#include <sstream>
 
 using namespace std;
 
@@ -77,25 +79,41 @@ void Player::setDefBuff(int val) { defBuff = val; }
 void Player::resetBuffs() { atkBuff = 0; defBuff = 0; }
 
 void Player::displayInfo() const {
-    cout << BOLD << "=== " << name << " ===" << RESET << endl;
-    cout << GREEN << "hp : " << hp << "/" << hpMax << RESET << endl;
-    cout << CYAN << "atk : " << atk << " | def : " << def << RESET << endl;
+    Display::drawTopBorder(52, CYAN);
+    Display::drawCenteredLine(BOLD + name + RESET, 52, CYAN);
+    Display::drawSeparator(52, CYAN);
+    Display::drawLeftLine(Display::hpBar("HP", hp, hpMax), 52, CYAN);
+    ostringstream statsLine;
+    statsLine << CYAN << "ATK : " << atk << "  |  DEF : " << def << RESET;
+    Display::drawLeftLine(statsLine.str(), 52, CYAN);
     if(atkBuff > 0 || defBuff > 0) {
-        cout << CYAN << "buffs actifs : atk +" << atkBuff << " | def +" << defBuff << RESET << endl;
+        ostringstream buffLine;
+        buffLine << YELLOW << "buffs actifs : atk +" << atkBuff << " | def +" << defBuff << RESET;
+        Display::drawLeftLine(buffLine.str(), 52, CYAN);
     }
-    cout << RED << "monstres tues : " << monstersKilled << RESET << endl;
-    cout << GREEN << "monstres epargnes : " << monstersSpared << RESET << endl;
-    cout << YELLOW << "victoires : " << victories << "/10" << RESET << endl;
+    Display::drawSeparator(52, CYAN);
+    ostringstream killLine;
+    killLine << RED << "monstres tues : " << monstersKilled << RESET;
+    Display::drawLeftLine(killLine.str(), 52, CYAN);
+    ostringstream spareLine;
+    spareLine << GREEN << "monstres epargnes : " << monstersSpared << RESET;
+    Display::drawLeftLine(spareLine.str(), 52, CYAN);
+    ostringstream victLine;
+    victLine << YELLOW << "victoires : " << victories << "/10" << RESET;
+    Display::drawLeftLine(victLine.str(), 52, CYAN);
+    Display::drawBottomBorder(52, CYAN);
 }
 
 void Player::displayItems() const {
     if(inventory.empty()) {
-        cout << "inventaire vide." << endl;
+        cout << YELLOW << "inventaire vide." << RESET << endl;
         return;
     }
-    cout << BOLD << "=== inventaire ===" << RESET << endl;
+    Display::drawTitleBox("inventaire", 52, GREEN);
     for(int i=0; i < (int)inventory.size(); i++) {
-        cout << i+1 << ". ";
-        inventory[i].displayItem();
+        ostringstream oss;
+        oss << i+1 << ". " << inventory[i].formatItem();
+        Display::drawLeftLine(oss.str(), 52, GREEN);
     }
+    Display::drawBottomBorder(52, GREEN);
 }

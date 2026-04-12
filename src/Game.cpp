@@ -1,5 +1,6 @@
 #include "../include/Game.h"
 #include "../include/Colors.h"
+#include "../include/Display.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -90,33 +91,41 @@ void Game::triggerRandomEvent() {
     RandomEvent& evt = eventCatalog[eventDist(rng)];
 
     cout << endl;
-    cout << BOLD << MAGENTA << "*** evenement : " << evt.name << " ***" << RESET << endl;
-    cout << CYAN << evt.description << RESET << endl;
+    Display::drawTitleBox("* evenement aleatoire *", 52, MAGENTA);
+    Display::drawLeftLine(BOLD + evt.name + RESET, 52, MAGENTA);
+    Display::drawLeftLine(CYAN + evt.description + RESET, 52, MAGENTA);
+    Display::drawEmptyLine(52, MAGENTA);
 
     // dispatch sur le type d'événement via une chaîne de if/else, suffisante pour le nombre de cas couverts
+    ostringstream resultLine;
     if(evt.type == "HEAL") {
         player.heal(evt.value);
-        cout << GREEN << "hp restaures : +" << evt.value << " (hp : " << player.getHp() << "/" << player.getHpMax() << ")" << RESET << endl;
+        resultLine << GREEN << "hp restaures : +" << evt.value << " (hp : " << player.getHp() << "/" << player.getHpMax() << ")" << RESET;
+        Display::drawLeftLine(resultLine.str(), 52, MAGENTA);
     } else if(evt.type == "DAMAGE") {
         player.takeDamage(evt.value);
-        cout << RED << "degats subis : " << evt.value << " (hp : " << player.getHp() << "/" << player.getHpMax() << ")" << RESET << endl;
+        resultLine << RED << "degats subis : " << evt.value << " (hp : " << player.getHp() << "/" << player.getHpMax() << ")" << RESET;
+        Display::drawLeftLine(resultLine.str(), 52, MAGENTA);
         // un événement peut être létal : on doit donc gérer le cas du game over ici aussi
         if(!player.isAlive()) {
-            cout << BOLD << RED << "tu as succombe a l'evenement... game over" << RESET << endl;
+            Display::drawLeftLine(BOLD + RED + "tu as succombe a l'evenement... GAME OVER" + RESET, 52, MAGENTA);
             gameOver = true;
         }
     } else if(evt.type == "ATK_BOOST") {
         player.setAtkBuff(player.getAtkBuff() + evt.value);
-        cout << CYAN << "atk temporairement +" << evt.value << " !" << RESET << endl;
+        resultLine << CYAN << "atk temporairement +" << evt.value << " !" << RESET;
+        Display::drawLeftLine(resultLine.str(), 52, MAGENTA);
     } else if(evt.type == "DEF_BOOST") {
         player.setDefBuff(player.getDefBuff() + evt.value);
-        cout << CYAN << "def temporairement +" << evt.value << " !" << RESET << endl;
+        resultLine << CYAN << "def temporairement +" << evt.value << " !" << RESET;
+        Display::drawLeftLine(resultLine.str(), 52, MAGENTA);
     } else if(evt.type == "ITEM_FIND") {
         // un seul item est attribué pour le moment ; le pool pourra être étendu ultérieurement
         Item snack("Snack", "HEAL", 8, 1);
         player.addItem(snack);
-        cout << GREEN << "tu obtiens un snack !" << RESET << endl;
+        Display::drawLeftLine(GREEN + string("tu obtiens un snack !") + RESET, 52, MAGENTA);
     }
+    Display::drawBottomBorder(52, MAGENTA);
 }
 
 MonsterCategory Game::parseCategory(string cat) {
@@ -326,60 +335,81 @@ void Game::showBestiary() {
 }
 
 void Game::checkEnding() {
-    cout << endl;
-    cout << BOLD << YELLOW << "============================================" << RESET << endl;
-    cout << BOLD << YELLOW << "   felicitations ! 10 victoires atteintes !" << RESET << endl;
-    cout << BOLD << YELLOW << "============================================" << RESET << endl;
-    cout << endl;
-
     int killed = player.getMonstersKilled();
     int spared = player.getMonstersSpared();
 
-    // trois fins possibles, déterminées par le profil de jeu :
-    //  - aucun monstre épargné  -> fin génocidaire
-    //  - aucun monstre tué      -> fin pacifiste
-    //  - les deux               -> fin neutre
+    // trois fins possibles, déterminées par le profil de jeu
+    string endColor;
+    string endTitle;
+    string endLine1, endLine2, endLine3;
+
     if(spared == 0) {
-        cout << BOLD << RED << "=== fin genocidaire ===" << RESET << endl;
-        cout << RED << "tu as tue tous les monstres sans exception." << RESET << endl;
-        cout << RED << "le monde tremble devant ta puissance..." << RESET << endl;
-        cout << RED << "mais a quel prix ?" << RESET << endl;
+        endColor = RED;
+        endTitle = "=== FIN GENOCIDAIRE ===";
+        endLine1 = "tu as tue tous les monstres sans exception.";
+        endLine2 = "le monde tremble devant ta puissance...";
+        endLine3 = "mais a quel prix ?";
     } else if(killed == 0) {
-        cout << BOLD << GREEN << "=== fin pacifiste ===" << RESET << endl;
-        cout << GREEN << "tu as epargne chaque monstre que tu as croise." << RESET << endl;
-        cout << GREEN << "le monde est en paix grace a ta compassion." << RESET << endl;
-        cout << GREEN << "les monstres te considerent comme un ami." << RESET << endl;
+        endColor = GREEN;
+        endTitle = "=== FIN PACIFISTE ===";
+        endLine1 = "tu as epargne chaque monstre que tu as croise.";
+        endLine2 = "le monde est en paix grace a ta compassion.";
+        endLine3 = "les monstres te considerent comme un ami.";
     } else {
-        cout << BOLD << YELLOW << "=== fin neutre ===" << RESET << endl;
-        cout << YELLOW << "tu as tue " << killed << " monstre(s) et epargne " << spared << " monstre(s)." << RESET << endl;
-        cout << YELLOW << "ton chemin fut un melange de violence et de compassion." << RESET << endl;
-        cout << YELLOW << "le monde ne sait pas trop quoi penser de toi..." << RESET << endl;
+        endColor = YELLOW;
+        endTitle = "=== FIN NEUTRE ===";
+        ostringstream oss;
+        oss << "tu as tue " << killed << " monstre(s) et epargne " << spared << " monstre(s).";
+        endLine1 = oss.str();
+        endLine2 = "ton chemin fut un melange de violence et de compassion.";
+        endLine3 = "le monde ne sait pas trop quoi penser de toi...";
     }
 
     cout << endl;
-    cout << BOLD << CYAN << "merci d'avoir joue a alterdune !" << RESET << endl;
+    Display::drawTopBorder(52, endColor);
+    Display::drawEmptyLine(52, endColor);
+    Display::drawCenteredLine(BOLD + YELLOW + "10 victoires atteintes !" + RESET, 52, endColor);
+    Display::drawEmptyLine(52, endColor);
+    Display::drawSeparator(52, endColor);
+    Display::drawCenteredLine(BOLD + endColor + endTitle + RESET, 52, endColor);
+    Display::drawEmptyLine(52, endColor);
+    Display::drawLeftLine(endColor + endLine1 + RESET, 52, endColor);
+    Display::drawLeftLine(endColor + endLine2 + RESET, 52, endColor);
+    Display::drawLeftLine(endColor + endLine3 + RESET, 52, endColor);
+    Display::drawEmptyLine(52, endColor);
+    Display::drawSeparator(52, endColor);
+    Display::drawCenteredLine(BOLD + CYAN + "merci d'avoir joue a alterdune !" + RESET, 52, endColor);
+    Display::drawBottomBorder(52, endColor);
 }
 
 void Game::showMenu() {
     cout << endl;
-    cout << BOLD << BLUE << "===== menu principal =====" << RESET << endl;
-    cout << CYAN << "1. bestiaire" << RESET << endl;
-    cout << CYAN << "2. demarrer un combat" << RESET << endl;
-    cout << CYAN << "3. statistiques" << RESET << endl;
-    cout << CYAN << "4. items" << RESET << endl;
-    cout << CYAN << "5. quitter" << RESET << endl;
-    cout << BOLD << BLUE << "==========================" << RESET << endl;
-    cout << "ton choix : ";
+    Display::drawTitleBox("menu principal", 40, BLUE);
+    Display::drawMenuOption(1, "bestiaire", 40, CYAN);
+    Display::drawMenuOption(2, "demarrer un combat", 40, CYAN);
+    Display::drawMenuOption(3, "statistiques", 40, CYAN);
+    Display::drawMenuOption(4, "items", 40, CYAN);
+    Display::drawMenuOption(5, "quitter", 40, CYAN);
+    Display::drawBottomBorder(40, BLUE);
+    cout << " ton choix : ";
 }
 
 void Game::run() {
-    cout << BOLD << CYAN << "========================================" << RESET << endl;
-    cout << BOLD << CYAN << "         bienvenue dans alterdune       " << RESET << endl;
-    cout << BOLD << CYAN << "========================================" << RESET << endl;
+    cout << endl;
+    Display::drawTopBorder(52, BOLD + CYAN);
+    Display::drawEmptyLine(52, BOLD + CYAN);
+    Display::drawCenteredLine(BOLD + CYAN + "A L T E R D U N E" + RESET, 52, BOLD + CYAN);
+    // ligne decorative sous le titre
+    string decoLine;
+    for(int i = 0; i < 20; i++) decoLine += "\xe2\x95\x90";
+    Display::drawCenteredLine(DIM + CYAN + decoLine + RESET, 52, BOLD + CYAN);
+    Display::drawCenteredLine("un jeu inspire d'undertale", 52, BOLD + CYAN);
+    Display::drawEmptyLine(52, BOLD + CYAN);
+    Display::drawBottomBorder(52, BOLD + CYAN);
     cout << endl;
 
     // étape 1 : saisie du nom du personnage
-    cout << "entre le nom de ton personnage : ";
+    cout << " entre le nom de ton personnage : ";
     string nom;
     getline(cin, nom);
     player = Player(nom);
@@ -394,13 +424,16 @@ void Game::run() {
 
     // étape 3 : récapitulatif pour confirmer le bon chargement de l'état initial
     cout << endl;
-    cout << "--- recapitulatif ---" << endl;
-    cout << "joueur : " << player.getName() << endl;
-    cout << "hp : " << player.getHp() << "/" << player.getHpMax() << endl;
-    cout << "items :" << endl;
-    player.displayItems();
-    cout << endl;
-    cout << monsterPool.size() << " monstre(s) charge(s)." << endl;
+    Display::drawTitleBox("recapitulatif", 52, CYAN);
+    Display::drawLeftLine("joueur : " + BOLD + player.getName() + RESET, 52, CYAN);
+    Display::drawLeftLine(Display::hpBar("HP", player.getHp(), player.getHpMax()), 52, CYAN);
+    ostringstream itemsLine;
+    itemsLine << "items : " << player.getInventory().size() << " item(s)";
+    Display::drawLeftLine(itemsLine.str(), 52, CYAN);
+    ostringstream monstersLine;
+    monstersLine << "monstres charges : " << monsterPool.size();
+    Display::drawLeftLine(monstersLine.str(), 52, CYAN);
+    Display::drawBottomBorder(52, CYAN);
 
     // étape 4 : boucle principale du menu, jusqu'à 10 victoires ou game over
     while(player.getVictories() < 10 && !gameOver) {
@@ -427,7 +460,7 @@ void Game::run() {
                 showItems();
                 break;
             case 5:
-                cout << "a plus !" << endl;
+                cout << endl << CYAN << " a plus !" << RESET << endl;
                 return;
         }
     }

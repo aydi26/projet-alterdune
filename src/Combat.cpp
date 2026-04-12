@@ -1,6 +1,8 @@
 #include "../include/Combat.h"
 #include "../include/Colors.h"
+#include "../include/Display.h"
 #include <limits>
+#include <sstream>
 
 using namespace std;
 
@@ -22,11 +24,14 @@ int Combat::rollDamage(int hpMax, int attackerAtk,int defenderDef) {
 
 void Combat::displayCombatStatus() {
     cout << endl;
-    cout << BOLD << "--- etat du combat ---" << RESET << endl;
-    cout << GREEN << player.getName() << " : hp " << player.getHp() << "/" << player.getHpMax() << RESET << endl;
-    cout << RED << monster->getName() << " : hp " << monster->getHp() << "/" << monster->getHpMax() << RESET;
-    cout << " | " << YELLOW << "mercy : " << monster->getMercy() << "/" << monster->getMercyGoal() << RESET << endl;
-    cout << BOLD << "----------------------" << RESET << endl;
+    Display::drawTitleBox("etat du combat", 52, BOLD);
+    Display::drawLeftLine(BOLD + player.getName() + RESET, 52, BOLD);
+    Display::drawLeftLine(Display::hpBar("HP", player.getHp(), player.getHpMax()), 52, BOLD);
+    Display::drawEmptyLine(52, BOLD);
+    Display::drawLeftLine(BOLD + monster->getName() + RESET, 52, BOLD);
+    Display::drawLeftLine(Display::hpBar("HP", monster->getHp(), monster->getHpMax()), 52, BOLD);
+    Display::drawLeftLine(Display::mercyBar("MERCY", monster->getMercy(), monster->getMercyGoal()), 52, BOLD);
+    Display::drawBottomBorder(52, BOLD);
 }
 
 void Combat::doFight() {
@@ -34,12 +39,12 @@ void Combat::doFight() {
     int degats = rollDamage(monster->getHpMax(), player.getAtk() + player.getAtkBuff(), monster->getDef());
 
     if(degats == 0) {
-        cout << GRAY << "tu attaques " << monster->getName() << " mais tu rates ton coup !" << RESET << endl;
+        cout << "  " << GRAY << "tu attaques " << monster->getName() << " mais tu rates ton coup !" << RESET << endl;
     } else {
-        cout << RED << "tu attaques " << monster->getName() << " et lui infliges " << degats << " degats !" << RESET << endl;
+        cout << "  " << RED << "tu attaques " << monster->getName() << " et lui infliges " << degats << " degats !" << RESET << endl;
         monster->takeDamage(degats);
         if(!monster->isAlive()) {
-            cout << BOLD << RED << monster->getName() << " est vaincu !" << RESET << endl;
+            cout << "  " << BOLD << RED << monster->getName() << " est vaincu !" << RESET << endl;
         }
     }
 }
@@ -52,14 +57,15 @@ void Combat::doAct() {
     int nbDisponibles = nbActs;
     if(nbDisponibles > (int)acts.size()) nbDisponibles = (int)acts.size();
 
-    cout << CYAN << "actions disponibles :" << RESET << endl;
+    Display::drawTitleBox("actions disponibles", 36, CYAN);
     for(int i=0; i < nbDisponibles; i++) {
-        cout << CYAN << i+1 << ". " << acts[i] << RESET << endl;
+        Display::drawMenuOption(i+1, acts[i], 36, CYAN);
     }
+    Display::drawBottomBorder(36, CYAN);
 
     // saisie utilisateur avec validation des bornes
     int choix;
-    cout << "choisis une action : ";
+    cout << " choisis une action : ";
     while(!(cin >> choix) || choix < 1 || choix > nbDisponibles) {
         cin.clear();
         cin.ignore(10000, '\n');
@@ -71,16 +77,16 @@ void Combat::doAct() {
     // résolution dans le catalogue ; en cas de csv mal formé on émet un message et on poursuit
     if(actCatalog.find(actID) != actCatalog.end()) {
         ACTAction& action = actCatalog[actID];
-        cout << endl << CYAN << action.text << RESET << endl;
+        cout << endl << "  " << CYAN << action.text << RESET << endl;
         monster->addMercy(action.mercyImpact);
 
         if(action.mercyImpact > 0) {
-            cout << YELLOW << "(mercy +" << action.mercyImpact << ")" << RESET << endl;
+            cout << "  " << YELLOW << "(mercy +" << action.mercyImpact << ")" << RESET << endl;
         } else if(action.mercyImpact < 0) {
-            cout << RED << "(mercy " << action.mercyImpact << ")" << RESET << endl;
+            cout << "  " << RED << "(mercy " << action.mercyImpact << ")" << RESET << endl;
         }
     } else {
-        cout << "action inconnue..." << endl;
+        cout << "  action inconnue..." << endl;
     }
 }
 
@@ -94,7 +100,7 @@ bool Combat::doItem() {
     }
 
     if(!hasUsable) {
-        cout << YELLOW << "tu n'as aucun item utilisable !" << RESET << endl;
+        cout << "  " << YELLOW << "tu n'as aucun item utilisable !" << RESET << endl;
         return false;       // le tour n'est pas consommé
     }
 
@@ -116,11 +122,11 @@ bool Combat::doItem() {
 bool Combat::doMercy() {
     // l'épargne n'est possible que si la jauge mercy a atteint son seuil
     if(monster->canBeSpared()) {
-        cout << BOLD << GREEN << "tu epargnes " << monster->getName() << " !" << RESET << endl;
-        cout << GREEN << monster->getName() << " s'en va paisiblement..." << RESET << endl;
+        cout << "  " << BOLD << GREEN << "tu epargnes " << monster->getName() << " !" << RESET << endl;
+        cout << "  " << GREEN << monster->getName() << " s'en va paisiblement..." << RESET << endl;
         return true;
     } else {
-        cout << YELLOW << "la jauge mercy n'est pas assez haute ! (" << monster->getMercy() << "/" << monster->getMercyGoal() << ")" << RESET << endl;
+        cout << "  " << YELLOW << "la jauge mercy n'est pas assez haute ! (" << monster->getMercy() << "/" << monster->getMercyGoal() << ")" << RESET << endl;
         return false;
     }
 }
@@ -129,19 +135,35 @@ void Combat::monsterTurn() {
     // tour d'attaque du monstre, en intégrant le defBuff temporaire du joueur
     int degats = rollDamage(player.getHpMax(), monster->getAtk(), player.getDef() + player.getDefBuff());
 
+    // multiplicateur de degats selon la categorie du monstre
+    if(degats > 0) {
+        double multiplier = 1.0;
+        switch(monster->getCategory()) {
+            case MINIBOSS: multiplier = 1.3; break;
+            case BOSS:     multiplier = 1.6; break;
+            default:       break;
+        }
+        degats = (int)(degats * multiplier);
+        if(degats < 1) degats = 1;
+    }
+
     if(degats == 0) {
-        cout << GRAY << monster->getName() << " t'attaque mais rate son coup !" << RESET << endl;
+        cout << "  " << GRAY << monster->getName() << " t'attaque mais rate son coup !" << RESET << endl;
     } else {
-        cout << RED << monster->getName() << " t'attaque et inflige " << degats << " degats !" << RESET << endl;
+        cout << "  " << RED << monster->getName() << " t'attaque et inflige " << degats << " degats !" << RESET << endl;
         player.takeDamage(degats);
     }
 }
 
 bool Combat::start() {
     cout << endl;
-    cout << BOLD << MAGENTA << "==============================" << RESET << endl;
-    cout << BOLD << MAGENTA << "un " << monster->getName() << " (" << monster->getCategoryStr() << ") apparait !" << RESET << endl;
-    cout << BOLD << MAGENTA << "==============================" << RESET << endl;
+    Display::drawTopBorder(52, BOLD + MAGENTA);
+    Display::drawCenteredLine(BOLD + MAGENTA + "* COMBAT *" + RESET, 52, BOLD + MAGENTA);
+    Display::drawSeparator(52, BOLD + MAGENTA);
+    ostringstream encounterLine;
+    encounterLine << "un " << monster->getName() << " (" << monster->getCategoryStr() << ") apparait !";
+    Display::drawCenteredLine(encounterLine.str(), 52, BOLD + MAGENTA);
+    Display::drawBottomBorder(52, BOLD + MAGENTA);
 
     bool spared = false;
 
@@ -150,17 +172,19 @@ bool Combat::start() {
         displayCombatStatus();
 
         cout << endl;
-        cout << RED << "1. fight" << RESET << endl;
-        cout << CYAN << "2. act" << RESET << endl;
-        cout << GREEN << "3. item" << RESET << endl;
-        cout << YELLOW << "4. mercy" << RESET << endl;
-        cout << "que veux-tu faire ? ";
+        Display::drawTopBorder(28, "");
+        Display::drawMenuOption(1, "fight", 28, RED);
+        Display::drawMenuOption(2, "act", 28, CYAN);
+        Display::drawMenuOption(3, "item", 28, GREEN);
+        Display::drawMenuOption(4, "mercy", 28, YELLOW);
+        Display::drawBottomBorder(28, "");
+        cout << " que veux-tu faire ? ";
 
         int choix;
         while(!(cin >> choix) || choix < 1 || choix > 4) {
             cin.clear();
             cin.ignore(10000, '\n');
-            cout << "choix invalide, recommence : ";
+            cout << " choix invalide, recommence : ";
         }
 
         // si turnUsed reste à false, le tour n'est pas consommé et le joueur peut rejouer
@@ -192,8 +216,15 @@ bool Combat::start() {
             player.addVictory();
             player.addKill();
             bestiary.addEntry(*monster, "Tue");
-            cout << endl << BOLD << RED << "tu as tue " << monster->getName() << " !" << RESET << endl;
-            cout << YELLOW << "victoires : " << player.getVictories() << "/10" << RESET << endl;
+            cout << endl;
+            Display::drawTopBorder(40, RED);
+            ostringstream killMsg;
+            killMsg << BOLD << RED << "tu as tue " << monster->getName() << " !" << RESET;
+            Display::drawCenteredLine(killMsg.str(), 40, RED);
+            ostringstream victMsg;
+            victMsg << YELLOW << "victoires : " << player.getVictories() << "/10" << RESET;
+            Display::drawCenteredLine(victMsg.str(), 40, RED);
+            Display::drawBottomBorder(40, RED);
             return true;
         }
 
@@ -202,8 +233,15 @@ bool Combat::start() {
             player.addVictory();
             player.addSpare();
             bestiary.addEntry(*monster, "Epargne");
-            cout << endl << BOLD << GREEN << "tu as epargne " << monster->getName() << " !" << RESET << endl;
-            cout << YELLOW << "victoires : " << player.getVictories() << "/10" << RESET << endl;
+            cout << endl;
+            Display::drawTopBorder(40, GREEN);
+            ostringstream spareMsg;
+            spareMsg << BOLD << GREEN << "tu as epargne " << monster->getName() << " !" << RESET;
+            Display::drawCenteredLine(spareMsg.str(), 40, GREEN);
+            ostringstream victMsg2;
+            victMsg2 << YELLOW << "victoires : " << player.getVictories() << "/10" << RESET;
+            Display::drawCenteredLine(victMsg2.str(), 40, GREEN);
+            Display::drawBottomBorder(40, GREEN);
             return true;
         }
 
@@ -213,8 +251,13 @@ bool Combat::start() {
             monsterTurn();
 
             if(!player.isAlive()) {
-                cout << endl << BOLD << RED << "tu as ete vaincu par " << monster->getName() << "..." << RESET << endl;
-                cout << BOLD << RED << "game over" << RESET << endl;
+                cout << endl;
+                Display::drawTopBorder(40, RED);
+                ostringstream defeatMsg;
+                defeatMsg << BOLD << RED << "tu as ete vaincu par " << monster->getName() << "..." << RESET;
+                Display::drawCenteredLine(defeatMsg.str(), 40, RED);
+                Display::drawCenteredLine(BOLD + RED + "GAME OVER" + RESET, 40, RED);
+                Display::drawBottomBorder(40, RED);
                 return false;
             }
         }

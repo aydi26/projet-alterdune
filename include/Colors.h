@@ -16,6 +16,8 @@ const string MAGENTA = "\033[35m";
 const string CYAN    = "\033[36m";
 const string WHITE   = "\033[37m";
 const string GRAY    = "\033[90m";
-const string BOLD    = "\033[1m";
+const string BOLD      = "\033[1m";
+const string DIM       = "\033[2m";
+const string UNDERLINE = "\033[4m";
 
 #endif

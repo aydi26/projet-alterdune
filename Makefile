@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra
 
-SRC = src/main.cpp src/Entity.cpp src/Player.cpp src/Monster.cpp src/MonsterNormal.cpp src/MonsterMiniBoss.cpp src/MonsterBoss.cpp src/Item.cpp src/Combat.cpp src/Bestiary.cpp src/Game.cpp
+SRC = src/main.cpp src/Entity.cpp src/Player.cpp src/Monster.cpp src/MonsterNormal.cpp src/MonsterMiniBoss.cpp src/MonsterBoss.cpp src/Item.cpp src/Combat.cpp src/Bestiary.cpp src/Game.cpp src/Display.cpp
 OBJ = $(SRC:.cpp=.o)
 TARGET = alterdune
 

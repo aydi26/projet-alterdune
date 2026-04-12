@@ -1,5 +1,7 @@
 #include "../include/MonsterMiniBoss.h"
 #include "../include/Colors.h"
+#include "../include/Display.h"
+#include <sstream>
 
 using namespace std;
 
@@ -16,11 +18,16 @@ string MonsterMiniBoss::getCategoryStr() const {
 }
 
 void MonsterMiniBoss::displayInfo() const {
-    cout << BOLD << "=== " << getName() << " ===" << RESET << endl;
-    cout << "categorie : " << YELLOW << getCategoryStr() << RESET << endl;
-    cout << RED << "hp : " << getHp() << "/" << getHpMax() << RESET << endl;
-    cout << CYAN << "atk : " << getAtk() << " | def : " << getDef() << RESET << endl;
-    cout << YELLOW << "mercy : " << getMercy() << "/" << getMercyGoal() << RESET << endl;
+    Display::drawTopBorder(40, YELLOW);
+    Display::drawCenteredLine(BOLD + getName() + RESET, 40, YELLOW);
+    Display::drawSeparator(40, YELLOW);
+    Display::drawLeftLine("categorie : " + YELLOW + getCategoryStr() + RESET, 40, YELLOW);
+    Display::drawLeftLine(Display::hpBar("HP", getHp(), getHpMax(), 16), 40, YELLOW);
+    ostringstream statsLine;
+    statsLine << CYAN << "ATK : " << getAtk() << "  |  DEF : " << getDef() << RESET;
+    Display::drawLeftLine(statsLine.str(), 40, YELLOW);
+    Display::drawLeftLine(Display::mercyBar("MERCY", getMercy(), getMercyGoal(), 16), 40, YELLOW);
+    Display::drawBottomBorder(40, YELLOW);
 }
 
 unique_ptr<Monster> MonsterMiniBoss::clone() const {

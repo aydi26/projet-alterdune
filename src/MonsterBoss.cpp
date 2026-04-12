@@ -1,5 +1,7 @@
 #include "../include/MonsterBoss.h"
 #include "../include/Colors.h"
+#include "../include/Display.h"
+#include <sstream>
 
 using namespace std;
 
@@ -16,11 +18,16 @@ string MonsterBoss::getCategoryStr() const {
 }
 
 void MonsterBoss::displayInfo() const {
-    cout << BOLD << "=== " << getName() << " ===" << RESET << endl;
-    cout << "categorie : " << RED << getCategoryStr() << RESET << endl;
-    cout << RED << "hp : " << getHp() << "/" << getHpMax() << RESET << endl;
-    cout << CYAN << "atk : " << getAtk() << " | def : " << getDef() << RESET << endl;
-    cout << YELLOW << "mercy : " << getMercy() << "/" << getMercyGoal() << RESET << endl;
+    Display::drawTopBorder(40, RED);
+    Display::drawCenteredLine(BOLD + getName() + RESET, 40, RED);
+    Display::drawSeparator(40, RED);
+    Display::drawLeftLine("categorie : " + RED + getCategoryStr() + RESET, 40, RED);
+    Display::drawLeftLine(Display::hpBar("HP", getHp(), getHpMax(), 16), 40, RED);
+    ostringstream statsLine;
+    statsLine << CYAN << "ATK : " << getAtk() << "  |  DEF : " << getDef() << RESET;
+    Display::drawLeftLine(statsLine.str(), 40, RED);
+    Display::drawLeftLine(Display::mercyBar("MERCY", getMercy(), getMercyGoal(), 16), 40, RED);
+    Display::drawBottomBorder(40, RED);
 }
 
 unique_ptr<Monster> MonsterBoss::clone() const {

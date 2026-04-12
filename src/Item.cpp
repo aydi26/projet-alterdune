@@ -1,5 +1,6 @@
 #include "../include/Item.h"
 #include "../include/Colors.h"
+#include <sstream>
 
 using namespace std;
 
@@ -48,4 +49,18 @@ void Item::displayItem() const {
         cout << BLUE << "augmente def de " << value << RESET;
     }
     cout << " - quantite: " << quantity << endl;
+}
+
+string Item::formatItem() const {
+    ostringstream oss;
+    oss << name << " (" << type << ") - ";
+    if(type == "HEAL") {
+        oss << GREEN << "soigne " << value << " hp" << RESET;
+    } else if(type == "ATK_BUFF") {
+        oss << RED << "augmente atk de " << value << RESET;
+    } else if(type == "DEF_BUFF") {
+        oss << BLUE << "augmente def de " << value << RESET;
+    }
+    oss << " - x" << quantity;
+    return oss.str();
 }
