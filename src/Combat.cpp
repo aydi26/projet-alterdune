@@ -19,6 +19,7 @@ int Combat::rollDamage(int hpMax, int attackerAtk,int defenderDef) {
     if(baseDamage == 0) return 0;       // coup raté
     int finalDamage = baseDamage + attackerAtk - defenderDef;
     if(finalDamage < 1) finalDamage = 1;    // garantit un dégât minimal pour qu'une grosse def n'annule pas tout
+    if(finalDamage > hpMax) finalDamage = hpMax;    // les dégâts infligés ne peuvent pas dépasser les HP max de la cible
     return finalDamage;
 }
 
@@ -145,6 +146,7 @@ void Combat::monsterTurn() {
         }
         degats = (int)(degats * multiplier);
         if(degats < 1) degats = 1;
+        if(degats > player.getHpMax()) degats = player.getHpMax();    // cap après multiplicateur miniboss/boss
     }
 
     if(degats == 0) {
